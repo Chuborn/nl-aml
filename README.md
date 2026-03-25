@@ -12,6 +12,8 @@ Features
 - Ongoing AMLs
 - MS canceled AMLs
 
+Sister Project for tzi checker -> https://github.com/Chuborn/tzi-aml
+
 How to use it
 - nl.py
 - a .txt contains amls from tzi (no need to extract the mails)(selected with a arrow key)
