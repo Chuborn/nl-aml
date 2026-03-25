@@ -3,6 +3,8 @@ NL-AML Checker
 - Fully request-based
 - Works with any notletters-based aml
 - Proxyless and multithreaded
+- Auto detects shulkerv2 format
+- Auto detects custom format
 
 Features
 - Ready to secure AMLs
